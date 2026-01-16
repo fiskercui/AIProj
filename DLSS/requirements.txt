@@ -1,0 +1,21 @@
+# 深度学习框架
+torch>=2.0.0
+torchvision>=0.15.0
+
+# 图像处理
+opencv-python>=4.8.0
+Pillow>=10.0.0
+imageio>=2.31.0
+
+# 数学运算
+numpy>=1.24.0
+
+# 进度条和可视化
+tqdm>=4.65.0
+matplotlib>=3.7.0
+
+# 模型训练工具
+tensorboard>=2.13.0
+
+# 配置管理
+pyyaml>=6.0

@@ -1,0 +1,25 @@
+# NeRF 项目依赖包
+# Python 3.9+ 推荐
+
+# 深度学习框架
+torch>=2.0.0
+torchvision>=0.15.0
+
+# 数值计算
+numpy>=1.24.0
+
+# 图像处理
+imageio>=2.31.0
+imageio-ffmpeg>=0.4.8
+
+# 可视化
+matplotlib>=3.7.0
+
+# 进度条（可选）
+tqdm>=4.65.0
+
+# 说明：
+# 1. torch 安装可能需要根据你的 CUDA 版本选择对应版本
+# 2. 如果没有 GPU，CPU 版本也可以运行（速度较慢）
+# 3. 如果遇到安装问题，可以使用清华镜像源：
+#    pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple

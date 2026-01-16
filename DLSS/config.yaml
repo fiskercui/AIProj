@@ -1,0 +1,41 @@
+# DLSS 配置文件
+
+# 训练配置
+train:
+  epochs: 100
+  batch_size: 16
+  learning_rate: 0.0001
+  num_workers: 4
+  save_interval: 10  # 每 10 个 epoch 保存一次
+  
+# 模型配置
+model:
+  name: "ESRGAN"
+  scale: 4  # 放大倍数 (2, 4, 8)
+  num_channels: 3  # RGB
+  num_features: 64
+  num_blocks: 23
+  
+# 数据配置
+data:
+  train_dir: "./data/train"
+  test_dir: "./data/test"
+  hr_size: 256  # 高分辨率图像大小
+  lr_size: 64   # 低分辨率图像大小 (hr_size / scale)
+  
+# 推理配置
+inference:
+  checkpoint: "./checkpoints/best_model.pth"
+  device: "cuda"  # cuda 或 cpu
+  output_dir: "./results"
+  
+# 优化配置
+optimizer:
+  type: "Adam"
+  betas: [0.9, 0.999]
+  
+# 损失函数权重
+loss:
+  pixel_weight: 1.0
+  perceptual_weight: 0.1
+  adversarial_weight: 0.005

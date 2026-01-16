@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyTorch
+*.pth
+*.pt
+*.ckpt
+
+# 数据集（太大）
+data/train/
+data/test/
+datasets/
+
+# 结果
+results/
+outputs/
+
+# 模型权重（太大）
+checkpoints/*.pth
+checkpoints/*.pt
+!checkpoints/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 日志
+logs/
+*.log
+runs/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# 系统文件
+.DS_Store
+Thumbs.db
