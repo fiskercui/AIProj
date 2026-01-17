@@ -71,14 +71,72 @@ class Inferencer:
             return
         
         try:
-            checkpoint = torch.load(checkpoint_path, map_location=self.device)
+            checkpoint = torch.load(checkpoint_path, map_location=self.device, weights_only=False)
+            
+            # 处理不同格式的权重文件
+            state_dict = None
             
             if 'model_state_dict' in checkpoint:
-                self.model.load_state_dict(checkpoint['model_state_dict'])
+                state_dict = checkpoint['model_state_dict']
+            elif 'params_ema' in checkpoint:
+                # Real-ESRGAN 格式
+                state_dict = checkpoint['params_ema']
+            elif 'params' in checkpoint:
+                state_dict = checkpoint['params']
             else:
-                self.model.load_state_dict(checkpoint)
+                state_dict = checkpoint
             
-            print(f"成功加载模型权重: {checkpoint_path}")
+            # 智能转换键名
+            converted_state_dict = {}
+            for k, v in state_dict.items():
+                new_k = k
+                
+                # 移除 generator 前缀
+                if new_k.startswith('generator.'):
+                    new_k = new_k.replace('generator.', '')
+                
+                # 转换 body -> rrdb_blocks
+                if '.body.' in new_k:
+                    new_k = new_k.replace('.body.', '.rrdb_blocks.')
+                elif new_k.startswith('body.'):
+                    new_k = new_k.replace('body.', 'generator.rrdb_blocks.')
+                
+                # 转换 conv_body -> conv_body
+                if 'conv_body' in new_k and not new_k.startswith('generator.'):
+                    new_k = 'generator.' + new_k
+                    
+                # 转换 conv_first
+                if 'conv_first' in new_k and not new_k.startswith('generator.'):
+                    new_k = 'generator.' + new_k
+                
+                # 转换上采样层
+                if 'upconv' in new_k and not new_k.startswith('generator.'):
+                    new_k = 'generator.' + new_k
+                if 'conv_hr' in new_k and not new_k.startswith('generator.'):
+                    new_k = 'generator.' + new_k
+                if 'conv_last' in new_k and not new_k.startswith('generator.'):
+                    new_k = 'generator.' + new_k
+                
+                converted_state_dict[new_k] = v
+            
+            state_dict = converted_state_dict
+            
+            # 尝试加载权重
+            try:
+                self.model.load_state_dict(state_dict, strict=True)
+                print(f"成功加载模型权重: {checkpoint_path}")
+            except RuntimeError as e:
+                # 如果严格模式失败，尝试非严格模式
+                print(f"警告: 权重部分不匹配，尝试非严格加载...")
+                missing_keys, unexpected_keys = self.model.load_state_dict(state_dict, strict=False)
+                
+                if missing_keys:
+                    print(f"  缺失的键 ({len(missing_keys)}): {missing_keys[:5]}...")
+                if unexpected_keys:
+                    print(f"  意外的键 ({len(unexpected_keys)}): {unexpected_keys[:5]}...")
+                
+                print("已加载兼容的权重部分")
+                
         except Exception as e:
             print(f"加载权重时出错: {e}")
             print("将使用随机初始化的权重")

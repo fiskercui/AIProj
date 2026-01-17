@@ -47,7 +47,7 @@ pip install -r requirements.txt
 ### 2. 运行推理
 
 ```bash
-python inference.py --input ./data/test/input.png --output ./results/output.png --scale 4
+python inference.py --input ./data/test/input.png --output ./results/output.png
 ```
 
 ### 3. 训练模型（可选）
