@@ -1,0 +1,7 @@
+torch>=1.7.0
+torchvision>=0.8.1,<0.15.0
+basicsr>=1.4.2
+realesrgan
+numpy<2.0.0
+opencv-python
+Pillow
