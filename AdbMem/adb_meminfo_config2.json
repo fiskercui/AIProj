@@ -1,0 +1,5 @@
+{
+  "adb_path": "F:\\Program Files\\Netease\\MuMu\\nx_main\\adb.exe",
+  "target_process_keyword": "com.android.webview:sandboxed_process0",
+  "monitor_interval_seconds": 1
+}

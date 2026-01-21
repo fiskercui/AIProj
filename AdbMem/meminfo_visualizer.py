@@ -1,0 +1,681 @@
+import re
+import json
+from datetime import datetime
+from pathlib import Path
+
+def parse_meminfo_md(file_path):
+    """Parse meminfo markdown file and extract memory data"""
+    with open(file_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+    
+    # Find all execution blocks
+    execution_pattern = r'## Execution #(\d+)\s+\*\*Time\*\*: ([^\n]+)'
+    executions = re.finditer(execution_pattern, content)
+    
+    data = []
+    
+    for match in executions:
+        exec_num = int(match.group(1))
+        timestamp = match.group(2).strip()
+        
+        # Find the position after this execution header
+        start_pos = match.end()
+        
+        # Find the next execution or end of document
+        next_match = re.search(r'## Execution #\d+', content[start_pos:])
+        if next_match:
+            end_pos = start_pos + next_match.start()
+        else:
+            end_pos = len(content)
+        
+        section = content[start_pos:end_pos]
+        
+        # Extract memory information
+        # Pattern to match memory lines like:
+        #   Native Heap     4426     4308       40      216     4636    21368     2107     7970
+        memory_line_pattern = r'\s+(Native Heap|Dalvik Heap|Dalvik Other|Stack|Ashmem|Other dev|\.so mmap|\.jar mmap|\.apk mmap|\.ttf mmap|\.dex mmap|\.oat mmap|\.art mmap|Other mmap|Unknown)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)(?:\s+(\d+)\s+(\d+)\s+(\d+))?'
+        
+        memory_items = {}
+        for mem_match in re.finditer(memory_line_pattern, section):
+            mem_type = mem_match.group(1)
+            pss_total = int(mem_match.group(2))
+            private_dirty = int(mem_match.group(3))
+            private_clean = int(mem_match.group(4))
+            swappss_dirty = int(mem_match.group(5))
+            rss_total = int(mem_match.group(6))
+            heap_size = int(mem_match.group(7)) if mem_match.group(7) else None
+            heap_alloc = int(mem_match.group(8)) if mem_match.group(8) else None
+            heap_free = int(mem_match.group(9)) if mem_match.group(9) else None
+            
+            memory_items[mem_type] = {
+                'pss_total': pss_total,
+                'private_dirty': private_dirty,
+                'private_clean': private_clean,
+                'swappss_dirty': swappss_dirty,
+                'rss_total': rss_total,
+                'heap_size': heap_size,
+                'heap_alloc': heap_alloc,
+                'heap_free': heap_free
+            }
+        
+        if memory_items:
+            data.append({
+                'execution': exec_num,
+                'timestamp': timestamp,
+                'memory': memory_items
+            })
+    
+    return data
+
+def generate_html_viewer(output_html='meminfo_viewer.html'):
+    """Generate an interactive HTML viewer with Chart.js"""
+    
+    html_content = '''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Info Visualizer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .file-selector {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .file-selector label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #495057;
+            font-size: 1.1em;
+        }
+        
+        .file-selector input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+        
+        .file-selector input[type="file"]:hover {
+            border-color: #764ba2;
+            background: #f8f9fa;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .filter-group {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .filter-group h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
+        
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+        }
+        
+        .checkbox-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+        
+        .checkbox-item label {
+            cursor: pointer;
+            color: #495057;
+            font-size: 0.95em;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 600px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .info-message {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+            font-size: 1.2em;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 2px dashed #dee2e6;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card h4 {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+        
+        .stat-card .value {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Memory Info Visualizer</h1>
+        
+        <div class="file-selector">
+            <label for="fileInput">📁 Select Memory Info MD File:</label>
+            <input type="file" id="fileInput" accept=".md" />
+        </div>
+        
+        <div id="statsContainer" style="display: none;">
+            <div class="stats">
+                <div class="stat-card">
+                    <h4>Total Executions</h4>
+                    <div class="value" id="totalExecutions">0</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Memory Types</h4>
+                    <div class="value" id="memoryTypes">0</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Time Range</h4>
+                    <div class="value" id="timeRange" style="font-size: 1em;">-</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls" id="controls" style="display: none;">
+            <div class="filter-group">
+                <h3>📈 Memory Types</h3>
+                <div class="button-group">
+                    <button onclick="selectAllMemoryTypes()">Select All</button>
+                    <button onclick="deselectAllMemoryTypes()">Deselect All</button>
+                </div>
+                <div class="checkbox-group" id="memoryTypeFilters"></div>
+            </div>
+            
+            <div class="filter-group">
+                <h3>📉 Metrics</h3>
+                <div class="checkbox-group" id="metricFilters"></div>
+            </div>
+        </div>
+        
+        <div id="chartArea">
+            <div class="info-message">
+                👆 Please select a memory info MD file to visualize the data
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chartInstance = null;
+        let parsedData = [];
+        
+        const COLORS = [
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+            '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384',
+            '#36A2EB', '#FFCE56', '#9966FF', '#FF9F40'
+        ];
+        
+        document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+        
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                parsedData = parseMemInfoMD(content);
+                
+                if (parsedData.length > 0) {
+                    updateStats();
+                    initializeFilters();
+                    updateChart();
+                    document.getElementById('statsContainer').style.display = 'block';
+                    document.getElementById('controls').style.display = 'grid';
+                } else {
+                    alert('No memory data found in the file.');
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function parseMemInfoMD(content) {
+            const data = [];
+            const executionPattern = /## Execution #(\d+)\s+\*\*Time\*\*:\s*([^\\n]+)/g;
+            
+            let match;
+            const positions = [];
+            
+            while ((match = executionPattern.exec(content)) !== null) {
+                positions.push({
+                    execNum: parseInt(match[1]),
+                    timestamp: match[2].trim(),
+                    startPos: match.index + match[0].length
+                });
+            }
+            
+            for (let i = 0; i < positions.length; i++) {
+                const current = positions[i];
+                const endPos = i < positions.length - 1 ? positions[i + 1].startPos : content.length;
+                const section = content.substring(current.startPos, endPos);
+                
+                const memoryLinePattern = /\s+(Native Heap|Dalvik Heap|Dalvik Other|Stack|Ashmem|Other dev|\.so mmap|\.jar mmap|\.apk mmap|\.ttf mmap|\.dex mmap|\.oat mmap|\.art mmap|Other mmap|Unknown)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)(?:\s+(\d+)\s+(\d+)\s+(\d+))?/g;
+                
+                const memory = {};
+                let memMatch;
+                
+                while ((memMatch = memoryLinePattern.exec(section)) !== null) {
+                    const memType = memMatch[1];
+                    const pssTotal = parseInt(memMatch[2]);
+                    const privateDirty = parseInt(memMatch[3]);
+                    const privateClean = parseInt(memMatch[4]);
+                    const swappssDirty = parseInt(memMatch[5]);
+                    const rssTotal = parseInt(memMatch[6]);
+                    const heapSize = memMatch[7] ? parseInt(memMatch[7]) : null;
+                    const heapAlloc = memMatch[8] ? parseInt(memMatch[8]) : null;
+                    const heapFree = memMatch[9] ? parseInt(memMatch[9]) : null;
+                    
+                    memory[memType] = {
+                        pss_total: pssTotal,
+                        private_dirty: privateDirty,
+                        private_clean: privateClean,
+                        swappss_dirty: swappssDirty,
+                        rss_total: rssTotal,
+                        heap_size: heapSize,
+                        heap_alloc: heapAlloc,
+                        heap_free: heapFree
+                    };
+                }
+                
+                if (Object.keys(memory).length > 0) {
+                    data.push({
+                        execution: current.execNum,
+                        timestamp: current.timestamp,
+                        memory: memory
+                    });
+                }
+            }
+            
+            return data;
+        }
+        
+        function updateStats() {
+            const memoryTypesSet = new Set();
+            parsedData.forEach(item => {
+                Object.keys(item.memory).forEach(type => memoryTypesSet.add(type));
+            });
+            
+            document.getElementById('totalExecutions').textContent = parsedData.length;
+            document.getElementById('memoryTypes').textContent = memoryTypesSet.size;
+            
+            if (parsedData.length > 0) {
+                const firstTime = parsedData[0].timestamp;
+                const lastTime = parsedData[parsedData.length - 1].timestamp;
+                document.getElementById('timeRange').textContent = `${firstTime} → ${lastTime}`;
+            }
+        }
+        
+        function initializeFilters() {
+            // Get all unique memory types
+            const memoryTypes = new Set();
+            parsedData.forEach(item => {
+                Object.keys(item.memory).forEach(type => memoryTypes.add(type));
+            });
+            
+            // Create memory type checkboxes
+            const memoryTypeContainer = document.getElementById('memoryTypeFilters');
+            memoryTypeContainer.innerHTML = '';
+            
+            Array.from(memoryTypes).sort().forEach(type => {
+                const div = document.createElement('div');
+                div.className = 'checkbox-item';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `memtype_${type}`;
+                checkbox.value = type;
+                checkbox.checked = true;
+                checkbox.addEventListener('change', updateChart);
+                
+                const label = document.createElement('label');
+                label.htmlFor = `memtype_${type}`;
+                label.textContent = type;
+                
+                div.appendChild(checkbox);
+                div.appendChild(label);
+                memoryTypeContainer.appendChild(div);
+            });
+            
+            // Create metric checkboxes
+            const metricContainer = document.getElementById('metricFilters');
+            metricContainer.innerHTML = '';
+            
+            const metrics = [
+                { id: 'pss_total', label: 'Pss Total', checked: true },
+                { id: 'private_dirty', label: 'Private Dirty', checked: true },
+                { id: 'private_clean', label: 'Private Clean', checked: false },
+                { id: 'swappss_dirty', label: 'SwapPss Dirty', checked: false },
+                { id: 'rss_total', label: 'Rss Total', checked: false },
+                { id: 'heap_size', label: 'Heap Size', checked: false },
+                { id: 'heap_alloc', label: 'Heap Alloc', checked: false },
+                { id: 'heap_free', label: 'Heap Free', checked: false }
+            ];
+            
+            metrics.forEach(metric => {
+                const div = document.createElement('div');
+                div.className = 'checkbox-item';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `metric_${metric.id}`;
+                checkbox.value = metric.id;
+                checkbox.checked = metric.checked;
+                checkbox.addEventListener('change', updateChart);
+                
+                const label = document.createElement('label');
+                label.htmlFor = `metric_${metric.id}`;
+                label.textContent = metric.label;
+                
+                div.appendChild(checkbox);
+                div.appendChild(label);
+                metricContainer.appendChild(div);
+            });
+        }
+        
+        function selectAllMemoryTypes() {
+            document.querySelectorAll('#memoryTypeFilters input[type="checkbox"]').forEach(cb => {
+                cb.checked = true;
+            });
+            updateChart();
+        }
+        
+        function deselectAllMemoryTypes() {
+            document.querySelectorAll('#memoryTypeFilters input[type="checkbox"]').forEach(cb => {
+                cb.checked = false;
+            });
+            updateChart();
+        }
+        
+        function updateChart() {
+            // Get selected memory types
+            const selectedMemoryTypes = Array.from(
+                document.querySelectorAll('#memoryTypeFilters input[type="checkbox"]:checked')
+            ).map(cb => cb.value);
+            
+            // Get selected metrics
+            const selectedMetrics = Array.from(
+                document.querySelectorAll('#metricFilters input[type="checkbox"]:checked')
+            ).map(cb => cb.value);
+            
+            if (selectedMemoryTypes.length === 0 || selectedMetrics.length === 0) {
+                if (chartInstance) {
+                    chartInstance.destroy();
+                    chartInstance = null;
+                }
+                document.getElementById('chartArea').innerHTML = 
+                    '<div class="info-message">Please select at least one memory type and one metric</div>';
+                return;
+            }
+            
+            // Prepare chart data
+            const labels = parsedData.map((item, index) => `#${item.execution}`);
+            const datasets = [];
+            
+            const metricLabels = {
+                'pss_total': 'Pss Total',
+                'private_dirty': 'Private Dirty',
+                'private_clean': 'Private Clean',
+                'swappss_dirty': 'SwapPss Dirty',
+                'rss_total': 'Rss Total',
+                'heap_size': 'Heap Size',
+                'heap_alloc': 'Heap Alloc',
+                'heap_free': 'Heap Free'
+            };
+            
+            let colorIndex = 0;
+            selectedMemoryTypes.forEach(memType => {
+                selectedMetrics.forEach(metric => {
+                    const data = parsedData.map(item => {
+                        if (item.memory[memType] && item.memory[memType][metric] !== null && item.memory[memType][metric] !== undefined) {
+                            return item.memory[memType][metric];
+                        }
+                        return null;
+                    });
+                    
+                    // Skip if all data is null
+                    const hasData = data.some(val => val !== null);
+                    if (!hasData) return;
+                    
+                    const metricLabel = metricLabels[metric] || metric;
+                    
+                    datasets.push({
+                        label: `${memType} - ${metricLabel}`,
+                        data: data,
+                        borderColor: COLORS[colorIndex % COLORS.length],
+                        backgroundColor: COLORS[colorIndex % COLORS.length] + '20',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.1,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        spanGaps: false
+                    });
+                    
+                    colorIndex++;
+                });
+            });
+            
+            // Create or update chart
+            const chartArea = document.getElementById('chartArea');
+            
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+            
+            chartArea.innerHTML = '<div class="chart-container"><canvas id="memoryChart"></canvas></div>';
+            
+            const ctx = document.getElementById('memoryChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Memory Usage Over Time',
+                            font: {
+                                size: 18,
+                                weight: 'bold'
+                            }
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 15
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: {
+                                size: 14
+                            },
+                            bodyFont: {
+                                size: 13
+                            },
+                            callbacks: {
+                                title: function(context) {
+                                    const index = context[0].dataIndex;
+                                    return `Execution ${parsedData[index].execution} - ${parsedData[index].timestamp}`;
+                                },
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.parsed.y.toLocaleString()} KB`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Memory (KB)',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString() + ' KB';
+                                }
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Execution Number',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>'''
+    
+    with open(output_html, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+    
+    return output_html
+
+if __name__ == '__main__':
+    # Generate the HTML viewer
+    output_file = generate_html_viewer()
+    print(f"HTML viewer generated: {output_file}")
+    print(f"\nTo use the viewer:")
+    print(f"1. Open {output_file} in your browser")
+    print(f"2. Click 'Choose File' and select your meminfo MD file")
+    print(f"3. Use the filters to select which memory types and metrics to display")
+    print(f"\nYou can also parse a specific file with Python:")
+    print(f"   data = parse_meminfo_md('meminfo_output_20260120_184312.md')")

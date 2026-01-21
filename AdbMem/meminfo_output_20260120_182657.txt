@@ -1,0 +1,401 @@
+ADB Memory Info Monitor
+Target Process: com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:2
+Start Time: 2026-01-20 18:26:57
+================================================================================
+
+
+================================================================================
+Execution #1 - 2026-01-20 18:26:57
+================================================================================
+Applications Memory Usage (in Kilobytes):
+Uptime: 93830722 Realtime: 93830722
+
+** MEMINFO in pid 3073 [com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:2] **
+                   Pss  Private  Private  SwapPss      Rss     Heap     Heap     Heap
+                 Total    Dirty    Clean    Dirty    Total     Size    Alloc     Free
+                ------   ------   ------   ------   ------   ------   ------   ------
+  Native Heap     5374     5256       40      216     5584    21368     2107     7970
+  Dalvik Heap     1960     1360      208       29     2944     2257      721     1536
+ Dalvik Other     2287     1812      196      194     3028                           
+        Stack      717      716        0        2      720                           
+       Ashmem     9026      260        0        0    17960                           
+    Other dev       12        0       12        0      168                           
+     .so mmap     6214      100     2916      257    13988                           
+    .jar mmap     8442        0     1364        0    28468                           
+    .apk mmap    65969       84    62480      566    71148                           
+    .ttf mmap      180        0       56        0      304                           
+    .dex mmap      154        0        4        0      408                           
+    .oat mmap      156        0       60        0      256                           
+    .art mmap     1424      296       12        7     4724                           
+   Other mmap      648        4      152        3     1560                           
+      Unknown   412973   412760      180       25   413048                           
+        TOTAL   516835   422648    67680     1299   564308    23625     2828     9506
+ 
+ App Summary
+                       Pss(KB)                        Rss(KB)
+                        ------                         ------
+           Java Heap:     1668                           7668
+         Native Heap:     5256                           5584
+                Code:    67080                         114712
+               Stack:      716                            720
+            Graphics:        0                              0
+       Private Other:   415608
+              System:    26507
+             Unknown:                                  435624
+ 
+           TOTAL PSS:   516835            TOTAL RSS:   564308       TOTAL SWAP PSS:     1299
+ 
+ Objects
+               Views:        0         ViewRootImpl:        0
+         AppContexts:        3           Activities:        0
+              Assets:        4        AssetManagers:        0
+       Local Binders:        2        Proxy Binders:        7
+       Parcel memory:        3         Parcel count:       14
+    Death Recipients:        0      OpenSSL Sockets:        0
+            WebViews:        0
+ 
+ SQL
+         MEMORY_USED:        0
+  PAGECACHE_OVERFLOW:        0          MALLOC_SIZE:        0
+ 
+
+
+================================================================================
+Execution #2 - 2026-01-20 18:26:59
+================================================================================
+Applications Memory Usage (in Kilobytes):
+Uptime: 93831993 Realtime: 93831993
+
+** MEMINFO in pid 3073 [com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:2] **
+                   Pss  Private  Private  SwapPss      Rss     Heap     Heap     Heap
+                 Total    Dirty    Clean    Dirty    Total     Size    Alloc     Free
+                ------   ------   ------   ------   ------   ------   ------   ------
+  Native Heap     5374     5256       40      216     5584    21368     2108     7970
+  Dalvik Heap     1956     1356      208       29     2940     2257      721     1536
+ Dalvik Other     2287     1812      196      194     3028                           
+        Stack      717      716        0        2      720                           
+       Ashmem     9026      260        0        0    17960                           
+    Other dev       12        0       12        0      168                           
+     .so mmap     6214      100     2916      257    13988                           
+    .jar mmap     8443        0     1364        0    28472                           
+    .apk mmap    65969       84    62480      566    71148                           
+    .ttf mmap      180        0       56        0      304                           
+    .dex mmap      154        0        4        0      408                           
+    .oat mmap      156        0       60        0      256                           
+    .art mmap     1424      296       12        7     4724                           
+   Other mmap      648        4      152        3     1560                           
+      Unknown   413077   412864      180       25   413152                           
+        TOTAL   516936   422748    67680     1299   564412    23625     2829     9506
+ 
+ App Summary
+                       Pss(KB)                        Rss(KB)
+                        ------                         ------
+           Java Heap:     1664                           7664
+         Native Heap:     5256                           5584
+                Code:    67080                         114716
+               Stack:      716                            720
+            Graphics:        0                              0
+       Private Other:   415712
+              System:    26508
+             Unknown:                                  435728
+ 
+           TOTAL PSS:   516936            TOTAL RSS:   564412       TOTAL SWAP PSS:     1299
+ 
+ Objects
+               Views:        0         ViewRootImpl:        0
+         AppContexts:        3           Activities:        0
+              Assets:        4        AssetManagers:        0
+       Local Binders:        2        Proxy Binders:        7
+       Parcel memory:        3         Parcel count:       14
+    Death Recipients:        0      OpenSSL Sockets:        0
+            WebViews:        0
+ 
+ SQL
+         MEMORY_USED:        0
+  PAGECACHE_OVERFLOW:        0          MALLOC_SIZE:        0
+ 
+
+
+================================================================================
+Execution #3 - 2026-01-20 18:27:00
+================================================================================
+Applications Memory Usage (in Kilobytes):
+Uptime: 93833267 Realtime: 93833267
+
+** MEMINFO in pid 3073 [com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:2] **
+                   Pss  Private  Private  SwapPss      Rss     Heap     Heap     Heap
+                 Total    Dirty    Clean    Dirty    Total     Size    Alloc     Free
+                ------   ------   ------   ------   ------   ------   ------   ------
+  Native Heap     5374     5256       40      216     5584    21368     2108     7970
+  Dalvik Heap     1956     1356      208       29     2940     2257      721     1536
+ Dalvik Other     2287     1812      196      194     3028                           
+        Stack      717      716        0        2      720                           
+       Ashmem     9026      260        0        0    17960                           
+    Other dev       12        0       12        0      168                           
+     .so mmap     6214      100     2916      257    13988                           
+    .jar mmap     8443        0     1364        0    28472                           
+    .apk mmap    65969       84    62480      566    71148                           
+    .ttf mmap      180        0       56        0      304                           
+    .dex mmap      154        0        4        0      408                           
+    .oat mmap      156        0       60        0      256                           
+    .art mmap     1424      296       12        7     4724                           
+   Other mmap      648        4      152        3     1560                           
+      Unknown   413149   412936      180       25   413224                           
+        TOTAL   517008   422820    67680     1299   564484    23625     2829     9506
+ 
+ App Summary
+                       Pss(KB)                        Rss(KB)
+                        ------                         ------
+           Java Heap:     1664                           7664
+         Native Heap:     5256                           5584
+                Code:    67080                         114716
+               Stack:      716                            720
+            Graphics:        0                              0
+       Private Other:   415784
+              System:    26508
+             Unknown:                                  435800
+ 
+           TOTAL PSS:   517008            TOTAL RSS:   564484       TOTAL SWAP PSS:     1299
+ 
+ Objects
+               Views:        0         ViewRootImpl:        0
+         AppContexts:        3           Activities:        0
+              Assets:        4        AssetManagers:        0
+       Local Binders:        2        Proxy Binders:        7
+       Parcel memory:        3         Parcel count:       14
+    Death Recipients:        0      OpenSSL Sockets:        0
+            WebViews:        0
+ 
+ SQL
+         MEMORY_USED:        0
+  PAGECACHE_OVERFLOW:        0          MALLOC_SIZE:        0
+ 
+
+
+================================================================================
+Execution #4 - 2026-01-20 18:27:01
+================================================================================
+Applications Memory Usage (in Kilobytes):
+Uptime: 93834530 Realtime: 93834530
+
+** MEMINFO in pid 3073 [com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:2] **
+                   Pss  Private  Private  SwapPss      Rss     Heap     Heap     Heap
+                 Total    Dirty    Clean    Dirty    Total     Size    Alloc     Free
+                ------   ------   ------   ------   ------   ------   ------   ------
+  Native Heap     5374     5256       40      216     5584    21368     2108     7970
+  Dalvik Heap     1956     1356      208       29     2940     2257      721     1536
+ Dalvik Other     2287     1812      196      194     3028                           
+        Stack      717      716        0        2      720                           
+       Ashmem     9026      260        0        0    17960                           
+    Other dev       12        0       12        0      168                           
+     .so mmap     6214      100     2916      257    13988                           
+    .jar mmap     8443        0     1364        0    28472                           
+    .apk mmap    65969       84    62480      566    71148                           
+    .ttf mmap      180        0       56        0      304                           
+    .dex mmap      154        0        4        0      408                           
+    .oat mmap      156        0       60        0      256                           
+    .art mmap     1424      296       12        7     4724                           
+   Other mmap      648        4      152        3     1560                           
+      Unknown   413273   413060      180       25   413348                           
+        TOTAL   517132   422944    67680     1299   564608    23625     2829     9506
+ 
+ App Summary
+                       Pss(KB)                        Rss(KB)
+                        ------                         ------
+           Java Heap:     1664                           7664
+         Native Heap:     5256                           5584
+                Code:    67080                         114716
+               Stack:      716                            720
+            Graphics:        0                              0
+       Private Other:   415908
+              System:    26508
+             Unknown:                                  435924
+ 
+           TOTAL PSS:   517132            TOTAL RSS:   564608       TOTAL SWAP PSS:     1299
+ 
+ Objects
+               Views:        0         ViewRootImpl:        0
+         AppContexts:        3           Activities:        0
+              Assets:        4        AssetManagers:        0
+       Local Binders:        2        Proxy Binders:        7
+       Parcel memory:        3         Parcel count:       14
+    Death Recipients:        0      OpenSSL Sockets:        0
+            WebViews:        0
+ 
+ SQL
+         MEMORY_USED:        0
+  PAGECACHE_OVERFLOW:        0          MALLOC_SIZE:        0
+ 
+
+
+================================================================================
+Execution #5 - 2026-01-20 18:27:02
+================================================================================
+Applications Memory Usage (in Kilobytes):
+Uptime: 93835807 Realtime: 93835807
+
+** MEMINFO in pid 3073 [com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:2] **
+                   Pss  Private  Private  SwapPss      Rss     Heap     Heap     Heap
+                 Total    Dirty    Clean    Dirty    Total     Size    Alloc     Free
+                ------   ------   ------   ------   ------   ------   ------   ------
+  Native Heap     5374     5256       40      216     5584    21368     2107     7970
+  Dalvik Heap     1956     1356      208       29     2940     2257      721     1536
+ Dalvik Other     2279     1804      196      194     3020                           
+        Stack      717      716        0        2      720                           
+       Ashmem     9026      260        0        0    17960                           
+    Other dev       12        0       12        0      168                           
+     .so mmap     6214      100     2916      257    13988                           
+    .jar mmap     8443        0     1364        0    28472                           
+    .apk mmap    65969       84    62480      566    71148                           
+    .ttf mmap      180        0       56        0      304                           
+    .dex mmap      154        0        4        0      408                           
+    .oat mmap      156        0       60        0      256                           
+    .art mmap     1424      296       12        7     4724                           
+   Other mmap      648        4      152        3     1560                           
+      Unknown   413393   413180      180       25   413468                           
+        TOTAL   517244   423056    67680     1299   564720    23625     2828     9506
+ 
+ App Summary
+                       Pss(KB)                        Rss(KB)
+                        ------                         ------
+           Java Heap:     1664                           7664
+         Native Heap:     5256                           5584
+                Code:    67080                         114716
+               Stack:      716                            720
+            Graphics:        0                              0
+       Private Other:   416020
+              System:    26508
+             Unknown:                                  436036
+ 
+           TOTAL PSS:   517244            TOTAL RSS:   564720       TOTAL SWAP PSS:     1299
+ 
+ Objects
+               Views:        0         ViewRootImpl:        0
+         AppContexts:        3           Activities:        0
+              Assets:        4        AssetManagers:        0
+       Local Binders:        2        Proxy Binders:        7
+       Parcel memory:        3         Parcel count:       14
+    Death Recipients:        0      OpenSSL Sockets:        0
+            WebViews:        0
+ 
+ SQL
+         MEMORY_USED:        0
+  PAGECACHE_OVERFLOW:        0          MALLOC_SIZE:        0
+ 
+
+
+================================================================================
+Execution #6 - 2026-01-20 18:27:04
+================================================================================
+Applications Memory Usage (in Kilobytes):
+Uptime: 93837084 Realtime: 93837084
+
+** MEMINFO in pid 3073 [com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:2] **
+                   Pss  Private  Private  SwapPss      Rss     Heap     Heap     Heap
+                 Total    Dirty    Clean    Dirty    Total     Size    Alloc     Free
+                ------   ------   ------   ------   ------   ------   ------   ------
+  Native Heap     5374     5256       40      216     5584    21368     2108     7970
+  Dalvik Heap     1956     1356      208       29     2940     2257      721     1536
+ Dalvik Other     2283     1808      196      194     3024                           
+        Stack      717      716        0        2      720                           
+       Ashmem     9026      260        0        0    17960                           
+    Other dev       12        0       12        0      168                           
+     .so mmap     6214      100     2916      257    13988                           
+    .jar mmap     8443        0     1364        0    28472                           
+    .apk mmap    65969       84    62480      566    71148                           
+    .ttf mmap      180        0       56        0      304                           
+    .dex mmap      154        0        4        0      408                           
+    .oat mmap      156        0       60        0      256                           
+    .art mmap     1424      296       12        7     4724                           
+   Other mmap      648        4      152        3     1560                           
+      Unknown   413501   413288      180       25   413576                           
+        TOTAL   517356   423168    67680     1299   564832    23625     2829     9506
+ 
+ App Summary
+                       Pss(KB)                        Rss(KB)
+                        ------                         ------
+           Java Heap:     1664                           7664
+         Native Heap:     5256                           5584
+                Code:    67080                         114716
+               Stack:      716                            720
+            Graphics:        0                              0
+       Private Other:   416132
+              System:    26508
+             Unknown:                                  436148
+ 
+           TOTAL PSS:   517356            TOTAL RSS:   564832       TOTAL SWAP PSS:     1299
+ 
+ Objects
+               Views:        0         ViewRootImpl:        0
+         AppContexts:        3           Activities:        0
+              Assets:        4        AssetManagers:        0
+       Local Binders:        2        Proxy Binders:        7
+       Parcel memory:        3         Parcel count:       14
+    Death Recipients:        0      OpenSSL Sockets:        0
+            WebViews:        0
+ 
+ SQL
+         MEMORY_USED:        0
+  PAGECACHE_OVERFLOW:        0          MALLOC_SIZE:        0
+ 
+
+
+================================================================================
+Execution #7 - 2026-01-20 18:27:05
+================================================================================
+Applications Memory Usage (in Kilobytes):
+Uptime: 93838326 Realtime: 93838326
+
+** MEMINFO in pid 3073 [com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:2] **
+                   Pss  Private  Private  SwapPss      Rss     Heap     Heap     Heap
+                 Total    Dirty    Clean    Dirty    Total     Size    Alloc     Free
+                ------   ------   ------   ------   ------   ------   ------   ------
+  Native Heap     5374     5256       40      216     5584    21368     2108     7970
+  Dalvik Heap     1956     1356      208       29     2940     2257      721     1536
+ Dalvik Other     2283     1808      196      194     3024                           
+        Stack      717      716        0        2      720                           
+       Ashmem     9026      260        0        0    17960                           
+    Other dev       12        0       12        0      168                           
+     .so mmap     6214      100     2916      257    13988                           
+    .jar mmap     8443        0     1364        0    28472                           
+    .apk mmap    65969       84    62480      566    71148                           
+    .ttf mmap      180        0       56        0      304                           
+    .dex mmap      154        0        4        0      408                           
+    .oat mmap      156        0       60        0      256                           
+    .art mmap     1424      296       12        7     4724                           
+   Other mmap      648        4      152        3     1560                           
+      Unknown   413617   413404      180       25   413692                           
+        TOTAL   517472   423284    67680     1299   564948    23625     2829     9506
+ 
+ App Summary
+                       Pss(KB)                        Rss(KB)
+                        ------                         ------
+           Java Heap:     1664                           7664
+         Native Heap:     5256                           5584
+                Code:    67080                         114716
+               Stack:      716                            720
+            Graphics:        0                              0
+       Private Other:   416248
+              System:    26508
+             Unknown:                                  436264
+ 
+           TOTAL PSS:   517472            TOTAL RSS:   564948       TOTAL SWAP PSS:     1299
+ 
+ Objects
+               Views:        0         ViewRootImpl:        0
+         AppContexts:        3           Activities:        0
+              Assets:        4        AssetManagers:        0
+       Local Binders:        2        Proxy Binders:        7
+       Parcel memory:        3         Parcel count:       14
+    Death Recipients:        0      OpenSSL Sockets:        0
+            WebViews:        0
+ 
+ SQL
+         MEMORY_USED:        0
+  PAGECACHE_OVERFLOW:        0          MALLOC_SIZE:        0
+ 
+
+
+
+Monitoring stopped at: 2026-01-20 18:27:06
+Total executions: 7
