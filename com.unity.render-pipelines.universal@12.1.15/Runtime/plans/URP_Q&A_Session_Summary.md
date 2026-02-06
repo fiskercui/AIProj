@@ -543,16 +543,369 @@ ShaderTagId[] forwardOnlyShaderTagIds = new ShaderTagId[]
    - 材质分类规则
    - 与透明物体的区别
 
+7. **[URP_DepthPriming_NativeRenderPass_Detail.md](URP_DepthPriming_NativeRenderPass_Detail.md)**
+   - Depth Priming深度预处理详解
+   - Native RenderPass原生渲染通道
+   - 平台配置建议
+
+---
+
+## 问题 5: Depth Priming 和 Native RenderPass 详解
+
+### 原始问题
+
+```
+在性能优化建议中：
+**2. 合理配置渲染设置**
+- 启用Depth Priming (Forward)
+
+**3. 优化Pass数量**
+- 使用Native RenderPass (Tile-based GPU)
+
+详细讲解下Depth Priming和Native RenderPass
+```
+
+### 解答
+
+#### Depth Priming (深度预处理)
+
+**核心原理**：
+```
+传统Forward渲染问题：
+- 远处物体先绘制 -> 执行复杂Pixel Shader
+- 近处物体后绘制 -> 遮挡了远处
+- 远处物体的Shader计算被浪费（overdraw）
+
+Depth Priming解决方案（两遍渲染）：
+1. Depth Prepass: 只写深度，不计算光照（快速）
+2. Opaque Pass: ZTest设为Equal，只渲染可见像素
+
+结果：消除overdraw带来的Shader计算浪费
+```
+
+**配置选项**：
+```csharp
+public enum DepthPrimingMode
+{
+    Disabled,  // 禁用
+    Auto,      // 自动判断（推荐桌面平台）
+    Forced     // 强制启用
+}
+```
+
+**启用条件**（UniversalRenderer.cs Lines 415-428）：
+```csharp
+bool IsDepthPrimingEnabled(ref CameraData cameraData)
+{
+    // 1. 硬件必须支持深度复制
+    if (!CanCopyDepth(ref cameraData)) return false;
+    
+    // 2. 请求了Depth Priming
+    bool depthPrimingRequested =
+        (m_DepthPrimingRecommended && m_DepthPrimingMode == DepthPrimingMode.Auto)
+        || m_DepthPrimingMode == DepthPrimingMode.Forced;
+    
+    // 3. Forward渲染模式
+    bool isForwardRenderingMode = m_RenderingMode == RenderingMode.Forward;
+    
+    // 4. 第一个写深度的相机
+    bool isFirstCameraToWriteDepth = cameraData.renderType == CameraRenderType.Base;
+    
+    return depthPrimingRequested && isForwardRenderingMode && isFirstCameraToWriteDepth;
+}
+```
+
+**关键实现**（DrawObjectsPass.cs Lines 67-71）：
+```csharp
+// 开启Depth Priming时，不透明Pass使用ZTest Equal
+if (renderingData.cameraData.renderer.useDepthPriming && m_IsOpaque)
+{
+    m_RenderStateBlock.depthState = new DepthState(false, CompareFunction.Equal);
+}
+```
+
+**平台适用性**：
+```csharp
+// UniversalRenderer.cs Lines 231-235
+#if UNITY_ANDROID || UNITY_IOS || UNITY_TVOS
+    this.m_DepthPrimingRecommended = false;  // 移动平台不推荐
+#else
+    this.m_DepthPrimingRecommended = true;   // PC/Console推荐
+#endif
+```
+
+**原因分析**：
+```
+移动平台（Tile-based GPU）：
+- GPU使用On-chip Tile Memory优化
+- Depth Prepass额外Pass破坏Tile内存流
+- 总体性能可能下降
+
+桌面平台（Immediate Mode GPU）：
+- 传统Framebuffer架构
+- Overdraw是主要性能瓶颈
+- Depth Priming显著减少浪费
+```
+
+---
+
+#### Native RenderPass (原生渲染通道)
+
+**核心原理**：
+```
+传统方式（每个Pass独立）：
+cmd.SetRenderTarget(RT1);
+cmd.DrawRenderer(...);  // Store RT1 to VRAM
+
+cmd.SetRenderTarget(RT2);  // Load RT1 from VRAM
+cmd.Blit(RT1, RT2);        // Store RT2 to VRAM
+
+Native RenderPass方式（声明整个流程）：
+cmd.BeginRenderPass(
+    colorAttachments: [RT1, RT2],
+    subpasses: [
+        Subpass0: Write RT1
+        Subpass1: Read RT1 (Input Attachment), Write RT2
+    ]
+);
+
+GPU知道整个流程 -> 中间RT可保留在On-chip Memory
+不需要Load/Store到VRAM -> 大幅节省带宽
+```
+
+**Tile-based GPU架构优势**：
+```
+传统Immediate Mode GPU:
+1. Draw Call -> Write to Framebuffer (VRAM)
+2. 每次访问都是VRAM操作，高带宽消耗
+
+Tile-based GPU:
+1. 将屏幕划分为小Tile（16x16像素）
+2. 每个Tile：
+   a. Load到On-chip Memory
+   b. 执行所有Draw Call（芯片上完成）
+   c. 只在最后Store到VRAM
+
+Native RenderPass让GPU知道多个Pass属于同一逻辑
+-> GBuffer可以保留在On-chip Memory
+-> 只有最终Color需要Store
+```
+
+**URP实现**（NativeRenderPass.cs Lines 471-510）：
+```csharp
+// 开始RenderPass
+context.BeginRenderPass(rpDesc.w, rpDesc.h, samples, attachments, depthIndex);
+
+// 开始SubPass
+context.BeginSubPass(attachmentIndices);  // 可以指定Input Attachments
+
+// 执行渲染
+renderPass.Execute(context, ref renderingData);
+
+// 结束SubPass和RenderPass
+context.EndSubPass();
+context.EndRenderPass();
+```
+
+**Deferred渲染优化示例**：
+```
+传统方式（无Native RenderPass）：
+1. GBuffer Pass: Store 4个RT + Depth -> VRAM
+2. Deferred Pass: Load 5个RT from VRAM
+3. Forward Only: Load 2个RT
+总带宽：14个Framebuffer操作
+
+Native RenderPass方式：
+1. 声明整个RenderPass
+2. GBuffer保留在On-chip Memory
+3. Deferred Pass直接读取（Input Attachment）
+4. 只Store最终Color
+总带宽：1个Store操作
+
+带宽节省：~93%
+```
+
+**Shader中使用Framebuffer Fetch**：
+```hlsl
+#if defined(USE_FRAMEBUFFER_FETCH)
+    // Native RenderPass模式
+    FRAMEBUFFER_INPUT_FLOAT(0) half4 gbuffer0;  // Albedo
+    FRAMEBUFFER_INPUT_FLOAT(1) half4 gbuffer1;  // Specular
+    
+    // 直接从On-chip Memory读取
+    gbuffer.albedo = LOAD_FRAMEBUFFER_INPUT(0, input);
+#else
+    // 传统采样模式
+    TEXTURE2D(_GBuffer0);
+    gbuffer.albedo = SAMPLE_TEXTURE2D(_GBuffer0, sampler_point, uv);
+#endif
+```
+
+**启用条件**：
+```csharp
+// UniversalRenderer.cs Lines 228-229
+useRenderPassEnabled = data.useNativeRenderPass
+    && SystemInfo.graphicsDeviceType != GraphicsDeviceType.OpenGLES2
+    && !SystemInfo.graphicsDeviceName.Contains("Apple M"); // M1/M2已知问题
+```
+
+**平台支持**：
+```
+✓ Vulkan（移动/桌面）
+✓ Metal（iOS）
+✓ D3D12（桌面）
+✗ OpenGL ES 2.0
+✗ OpenGL Core
+✗ Apple Silicon (Unity 2021.3限制)
+```
+
+---
+
+#### 两者的关系与配置建议
+
+| 特性 | Depth Priming | Native RenderPass |
+|------|---------------|-------------------|
+| **目标平台** | 桌面（Immediate GPU） | 移动（Tile-based GPU） |
+| **优化目标** | 减少overdraw | 减少内存带宽 |
+| **渲染模式** | Forward Only | Forward + Deferred |
+| **额外Pass** | 需要Depth Prepass | 不需要额外Pass |
+
+**配置建议**：
+```csharp
+// 桌面平台（最佳配置）
+depthPrimingMode = DepthPrimingMode.Auto;
+useNativeRenderPass = false;  // 收益小
+
+// 移动平台（最佳配置）
+depthPrimingMode = DepthPrimingMode.Disabled;  // 破坏Tile优化
+useNativeRenderPass = true;  // 关键优化
+
+// VR/XR（带宽瓶颈）
+depthPrimingMode = DepthPrimingMode.Disabled;
+useNativeRenderPass = true;  // 至关重要
+```
+
+**性能提升参考**：
+```
+Depth Priming（桌面复杂场景）：
+- 条件：多光源、复杂PBR、overdraw > 2x
+- 提升：20-40%
+
+Native RenderPass（移动Deferred）：
+- 条件：Tile-based GPU、Deferred渲染
+- 带宽节省：80-90%
+- 性能提升：20-40%
+- 功耗降低：15-30%
+```
+
+---
+
+### 追问：Depth Priming 和 Early-Z 是一回事吗？
+
+**答：不是同一回事，它们有关联但工作原理不同**
+
+#### Early-Z (Early Depth Test) - GPU硬件特性
+```
+工作原理：
+- 在执行Fragment Shader之前进行深度测试
+- 如果深度测试失败，直接跳过该像素的Shader执行
+- GPU硬件自动完成，无需额外渲染Pass
+
+限制：
+- 只能利用"已经"存在于深度缓冲中的深度值
+- 依赖渲染顺序（从前往后排序效果最佳）
+- 如果Shader修改深度（alpha test/clip），Early-Z可能被禁用
+```
+
+#### Depth Priming - 软件渲染技术
+```
+工作原理：
+- 显式地先执行一遍Depth-Only Pass
+- 用简单Shader把所有不透明物体的深度写入深度缓冲
+- 主Pass用ZTest Equal，只渲染深度完全匹配的像素
+
+优势：
+- 保证100%消除overdraw（不依赖渲染顺序）
+- 即使从后往前渲染，也不会有额外Shader开销
+```
+
+#### 对比示例
+
+```
+场景：3层重叠物体 A(近) B(中) C(远)
+GPU按提交顺序渲染：C -> B -> A
+
+仅Early-Z（无Depth Priming）：
+1. 渲染C: 深度缓冲空，执行完整Shader ✗浪费
+2. 渲染B: C.depth > B.depth，执行完整Shader ✗浪费
+3. 渲染A: B.depth > A.depth，执行完整Shader
+总计：3次完整Shader执行
+
+有Depth Priming：
+Pass 1 (Depth Only):
+   - C,B,A 只写深度（简单Vertex Shader）
+   - 深度缓冲得到最终正确值（A的深度）
+
+Pass 2 (Main):
+   - C: ZTest Equal失败，跳过 ✓
+   - B: ZTest Equal失败，跳过 ✓
+   - A: ZTest Equal成功，执行完整Shader
+总计：1次完整Shader执行
+```
+
+#### 为什么移动平台不推荐Depth Priming
+
+```
+Tile-based GPU特殊情况：
+
+1. On-chip Tile Memory优化
+   - 移动GPU把屏幕分成小Tile（16x16像素）
+   - 每个Tile的渲染在On-chip Memory完成
+   - 只有Tile完成后才Store到VRAM
+   
+2. Depth Priming破坏这个优化：
+   - Depth Pass必须先完成整个屏幕
+   - 强制把深度Store到VRAM
+   - 主Pass开始时要Load深度回来
+   - 失去了On-chip Memory的带宽优势
+   
+3. Early-Z在Tile GPU上配合HSR(Hidden Surface Removal)已经很高效：
+   - Tile内部的自动深度排序
+   - 硬件级别的overdraw消除
+   - 额外的Depth Pass反而是负担
+   
+结论：
+- Tile-based GPU + Early-Z + HSR 已经足够高效
+- Depth Priming的额外Pass开销 > overdraw节省
+- 所以移动平台禁用Depth Priming
+```
+
+#### 总结对比表
+
+| 特性 | Early-Z | Depth Priming |
+|------|---------|---------------|
+| **类型** | GPU硬件特性 | 软件渲染技术 |
+| **额外Pass** | 否 | 是（Depth Only） |
+| **消除overdraw** | 部分（依赖顺序） | 完全 |
+| **带宽开销** | 无 | 有（额外Pass） |
+| **移动平台** | 与HSR配合很好 | 破坏Tile优化 |
+| **桌面平台** | 基础优化 | 额外优化层 |
+
+### 相关文档
+
+- [`plans/URP_DepthPriming_NativeRenderPass_Detail.md`](URP_DepthPriming_NativeRenderPass_Detail.md) - Depth Priming和Native RenderPass完整详解
+
 ---
 
 ## 讨论日期
 
-**2026-01-30**
+**2026-01-30** - 初始对话（问题1-4）
+**2026-02-04** - 追加（问题5：Depth Priming和Native RenderPass）
 
 ---
 
 ## 备注
 
-本文档总结了一次深度技术讨论，涵盖了URP渲染管线的核心架构和关键设计决策。所有问题都基于实际源码分析（Unity URP 12.1.15版本），提供了详细的技术解释和实战建议。
+本文档总结了关于URP渲染管线的深度技术讨论，涵盖了URP渲染管线的核心架构和关键设计决策。所有问题都基于实际源码分析（Unity URP 12.1.15版本），提供了详细的技术解释和实战建议。
 
 每个主题都有对应的专门文档提供更深入的分析，建议按需查阅。
