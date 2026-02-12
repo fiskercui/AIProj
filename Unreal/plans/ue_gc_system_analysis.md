@@ -565,3 +565,4 @@ The document covers all requested topics based on deep analysis of [`GarbageColl
 6. **Parallel & Incremental GC** — Work-stealing with `FWorkstealingManager`, 4KB `FWorkBlock` pages, `FPageAllocator`. Incremental time-slicing with `GReachabilityState` and GC barrier writes.
 
 7. **Supporting systems** — UObject hash table bucket design, GC synchronization (`FGCCSyncObject`), global state flags, CVar configuration, and the complete `CollectGarbage()` entry point flow.
+

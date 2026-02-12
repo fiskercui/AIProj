@@ -879,3 +879,20 @@ flowchart LR
 6. **Four specialized linked lists** optimize different traversal patterns (all props, refs only, destructors, post-construct)
 7. **Offset-based memory access** (`ContainerPtrToValuePtr`) is the fundamental primitive enabling type-erased property manipulation
 8. **The entire system exists as a parallel metadata layer** — every piece of runtime-accessible information is explicitly registered, not derived from C++ RTTI
+
+
+The comprehensive analysis of the UObject reflection system has been written to [`plans/uobject_reflection_system_analysis.md`](plans/uobject_reflection_system_analysis.md).
+
+The document covers all requested topics with source code references:
+
+1. **Macro System** — `UPROPERTY`/`UFUNCTION`/`USTRUCT` are empty macros (markers for UHT); `UCLASS` expands to a `_PROLOG` hook; `GENERATED_BODY` expands via token-pasting to inject `StaticClass()`, constructors, serialization code. `DECLARE_CLASS` and `IMPLEMENT_CLASS` macros establish class identity and trigger auto-registration.
+
+2. **UClass Construction** — Built in stages: `GetPrivateStaticClassBody()` allocates and constructs the UClass singleton → `InitializePrivateStaticClass()` sets SuperStruct and ClassWithin → `Register()` adds to GUObjectArray → `Link()` builds property chains.
+
+3. **Static Registration** — `IMPLEMENT_CLASS` creates a static `FRegisterCompiledInInfo` variable whose constructor calls `RegisterCompiledInInfo()` before `main()`. During engine init, `ProcessNewlyLoadedUObjects()` processes all pending registrations, calling `OuterRegister` (creates UClass) and `InnerRegister` (registers properties/functions).
+
+4. **CDO Generation** — Lazily created on first `GetDefaultObject(true)` call. `CreateDefaultObject()` ensures parent CDO exists, allocates memory via `StaticAllocateObject`, calls `ClassConstructor` (placement new via `__DefaultConstructor`), sets `RF_ClassDefaultObject` flag, walks `PostConstructLink` for initialization.
+
+5. **Property Chain Construction** — `UStruct::Link()` builds four linked lists: `PropertyLink` (all properties), `RefLink` (object references for GC), `DestructorLink` (destructible properties), `PostConstructLink` (post-construction init). Built by `TFieldIterator` which traverses the entire inheritance chain.
+
+6. **Key Answer: Why UE Can Traverse Class Members at Runtime** — Six mechanisms: UHT code generation creates FProperty objects with byte offsets; static auto-registration runs before main(); UClass singletons are constructed during engine init; Link() builds optimized property chains; offset-based memory access (`ContainerPtrToValuePtr`) enables type-erased read/write; CDOs provide default value baselines. The entire system is a parallel metadata layer — not C++ RTTI.
